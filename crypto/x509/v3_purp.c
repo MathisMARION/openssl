@@ -34,6 +34,8 @@ static int check_purpose_timestamp_sign(const X509_PURPOSE *xp, const X509 *x,
                                         int non_leaf);
 static int check_purpose_code_sign(const X509_PURPOSE *xp, const X509 *x,
                                         int non_leaf);
+static int check_purpose_wisun_fan(const X509_PURPOSE *xp, const X509 *x,
+                                   int non_leaf);
 static int no_check_purpose(const X509_PURPOSE *xp, const X509 *x,
                             int non_leaf);
 static int check_purpose_ocsp_helper(const X509_PURPOSE *xp, const X509 *x,
@@ -66,6 +68,9 @@ static X509_PURPOSE xstandard[] = {
      NULL},
     {X509_PURPOSE_CODE_SIGN, X509_TRUST_OBJECT_SIGN, 0,
      check_purpose_code_sign, "Code signing", "codesign",
+     NULL},
+    {X509_PURPOSE_WISUN_FAN, X509_TRUST_SSL_CLIENT, 0,
+     check_purpose_wisun_fan, "Wi-SUN FAN", "wisunfan",
      NULL},
 };
 
@@ -562,6 +567,9 @@ int ossl_x509v3_cache_extensions(X509 *x)
             case NID_anyExtendedKeyUsage:
                 x->ex_xkusage |= XKU_ANYEKU;
                 break;
+            case NID_id_kp_wisun_fan_device:
+                x->ex_xkusage |= XKU_WISUN_FAN;
+                break;
             default:
                 /* Ignore unknown extended key usage */
                 break;
@@ -968,6 +976,65 @@ static int check_purpose_code_sign(const X509_PURPOSE *xp, const X509 *x,
 
     return 1;
 
+}
+
+// Wi-SUN FAN 1.1v08 6.5.1.1 Wi-SUN IDevID Construction
+static int check_purpose_wisun_fan(const X509_PURPOSE *xp, const X509 *x,
+                                   int non_leaf)
+{
+    GENERAL_NAME *gen;
+    int hwmodnames;
+
+    if (non_leaf)
+        return check_ca(x);
+
+    /*
+     * b. KeyUsage - MUST have digitalSignature bit set
+     */
+    if ((x->ex_flags & EXFLAG_KUSAGE) == 0)
+        return 0;
+    if ((x->ex_kusage & KU_DIGITAL_SIGNATURE) == 0)
+        return 0;
+
+    /*
+     * The certificates MUST contain a SubjectAlternativeName extension (SANE)
+     * containing an alternative OtherName of type id-on-hardwareModuleName
+     * [RFC4108] and the SANE MUST be marked critical. The SANE MAY contain
+     * other names but these other names are ignored for the purposes of Wi-SUN
+     * path validation.
+     *   [...]
+     * c. SubjectAlternativeName - MUST contain one and only one alternative name
+     *    of type OtherName of type id-on-hardwareModule (see above).
+     */
+    if (x->altname == NULL)
+        return 0;
+    if ((x->ex_flags & EXFLAG_SAN_CRITICAL) == 0)
+        return 0;
+    hwmodnames = 0;
+    for (int i = 0; i < sk_GENERAL_NAME_num(x->altname); i++) {
+        gen = sk_GENERAL_NAME_value(x->altname, i);
+        if (gen->type != GEN_OTHERNAME)
+            continue;
+        if (OBJ_obj2nid(gen->d.otherName->type_id) != NID_id_on_hardwareModuleName)
+            continue;
+        hwmodnames++;
+    }
+    if (hwmodnames != 1)
+        return 0;
+
+    /*
+     * d. ExtendedKeyUsage
+     *    i.  MUST contain the object identifier id-kp-wisun-fan-device
+     *    ii. MUST contain the object identifier id-kp-clientAuth
+     */
+    if ((x->ex_flags & EXFLAG_XKUSAGE) == 0)
+        return 0;
+    if ((x->ex_xkusage & XKU_WISUN_FAN) == 0)
+        return 0;
+    if ((x->ex_xkusage & XKU_SSL_CLIENT) == 0)
+        return 0;
+
+    return 1;
 }
 
 static int no_check_purpose(const X509_PURPOSE *xp, const X509 *x,

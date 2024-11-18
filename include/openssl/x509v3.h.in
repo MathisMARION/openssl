@@ -459,6 +459,7 @@ struct ISSUING_DIST_POINT_st {
 # define XKU_TIMESTAMP           0x40
 # define XKU_DVCS                0x80
 # define XKU_ANYEKU              0x100
+# define XKU_WISUN_FAN           0x200
 
 # define X509_PURPOSE_DYNAMIC    0x1
 # define X509_PURPOSE_DYNAMIC_NAME       0x2
@@ -488,9 +489,10 @@ typedef struct x509_purpose_st {
 # define X509_PURPOSE_OCSP_HELPER        8
 # define X509_PURPOSE_TIMESTAMP_SIGN     9
 # define X509_PURPOSE_CODE_SIGN         10
+# define X509_PURPOSE_WISUN_FAN         11
 
 # define X509_PURPOSE_MIN                1
-# define X509_PURPOSE_MAX               10
+# define X509_PURPOSE_MAX               11
 
 /* Flags for X509V3_EXT_print() */
 

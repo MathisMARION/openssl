@@ -222,8 +222,8 @@ verified in the I<ctx>. Built-in available values for the I<purpose> argument
 are B<X509_PURPOSE_SSL_CLIENT>, B<X509_PURPOSE_SSL_SERVER>,
 B<X509_PURPOSE_NS_SSL_SERVER>, B<X509_PURPOSE_SMIME_SIGN>,
 B<X509_PURPOSE_SMIME_ENCRYPT>, B<X509_PURPOSE_CRL_SIGN>, B<X509_PURPOSE_ANY>,
-B<X509_PURPOSE_OCSP_HELPER>, B<X509_PURPOSE_TIMESTAMP_SIGN> and
-B<X509_PURPOSE_CODE_SIGN>.  It is also
+B<X509_PURPOSE_OCSP_HELPER>, B<X509_PURPOSE_TIMESTAMP_SIGN>,
+B<X509_PURPOSE_CODE_SIGN> and B<X509_PURPOSE_WISUN_FAN>.  It is also
 possible to create a custom purpose value. Setting a purpose requests that
 the key usage and extended key usage (EKU) extensions optionally declared within
 the certificate and its chain are verified to be consistent with that purpose.
